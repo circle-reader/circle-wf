@@ -1,0 +1,49 @@
+{
+  "name": "circle-cli",
+  "version": "1.0.0",
+  "license": "MIT",
+  "description": "xxxx",
+  "author": "Ranhe<wenguang.fe@gmail.com>",
+  "main": "lib/index.js",
+  "bin": {
+    "circle": "bin/index.js"
+  },
+  "scripts": {
+    "lint": "eslint lib/**",
+    "build": "yarn lint",
+    "prepare": "husky install"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^17.4.4",
+    "@commitlint/config-conventional": "^17.4.4",
+    "@types/cross-spawn": "^6.0.2",
+    "@types/download": "^8.0.2",
+    "@types/inquirer": "^9.0.3",
+    "@types/shelljs": "^0.8.12",
+    "@typescript-eslint/eslint-plugin": "^5.54.1",
+    "@typescript-eslint/parser": "^5.54.1",
+    "eslint": "^8.35.0",
+    "eslint-config-prettier": "^8.7.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.1.2",
+    "prettier": "^2.8.4"
+  },
+  "dependencies": {
+    "axios": "^1.4.0",
+    "commander": "^11.0.0",
+    "consola": "^3.2.2",
+    "cross-spawn": "^7.0.3",
+    "download": "^8.0.0",
+    "inquirer": "^9.2.7",
+    "inquirer-autocomplete-prompt": "^3.0.0",
+    "ora": "^6.3.1",
+    "shelljs": "^0.8.5",
+    "ts-node": "^10.9.1"
+  }
+}
