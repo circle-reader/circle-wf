@@ -3,7 +3,7 @@ import { consola } from 'consola';
 
 export default class Base {
   private name: string;
-  private spinner = ora('Loading...');
+  private spinner = ora('');
 
   constructor(name: string) {
     this.name = name;
@@ -25,7 +25,7 @@ export default class Base {
     consola.error(new Error(msg));
   }
 
-  loading(text = 'Loading...') {
+  loading(text = '处理中...') {
     this.spinner.text = text;
     this.spinner.start();
   }

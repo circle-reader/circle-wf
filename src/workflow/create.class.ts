@@ -4,8 +4,11 @@ import axios from 'axios';
 import inquirer from 'inquirer';
 import download from 'download';
 import spawn from 'cross-spawn';
-import Base from './base.class';
-import { projects, repository } from '../config';
+import Base from './base.class.js';
+import { createRequire } from 'module';
+import { docs, projects, repository } from '../config.js';
+
+const require = createRequire(import.meta.url);
 
 interface IProject {
   id: number;
@@ -30,7 +33,7 @@ export default class CreateProject extends Base {
   }
 
   process() {
-    this.loading('Loading template list...');
+    this.loading('准备中...');
     return axios
       .get(projects)
       .then((result: { data: Array<IProject> }) => {
@@ -40,7 +43,7 @@ export default class CreateProject extends Base {
             name: 'repo',
             // @ts-ignore
             type: 'autocomplete',
-            message: 'Please select a template.',
+            message: '请选择一个模版',
             source: async (answers: any, input: string) => {
               const projects = input
                 ? result.data.filter(
@@ -59,8 +62,7 @@ export default class CreateProject extends Base {
           {
             name: 'dir',
             type: 'input',
-            message:
-              'Please input the target directory("." means current directory)',
+            message: '请输入目标文件夹名称(输入 . 代表当前目录)',
             default: '.',
             validate: (input: string) => !!input,
           },
@@ -74,7 +76,7 @@ export default class CreateProject extends Base {
             return file !== '.git';
           });
           if (fileList.length > 0) {
-            this.warn('The target dir is NOT empty(except .git):');
+            this.warn('目标文件夹已经存在文件（.git除外）:');
             fileList.forEach((file: string) => {
               this.warn(`- ${file}`);
             });
@@ -82,8 +84,7 @@ export default class CreateProject extends Base {
               .prompt({
                 name: 'shouldContinue',
                 type: 'confirm',
-                message:
-                  'The file(s) above will be overwritten. Do you want to continue?',
+                message: '已存在的文件将被覆盖. 是否继续?',
               })
               .then(({ shouldContinue }: { shouldContinue: boolean }) => {
                 if (!shouldContinue) {
@@ -92,7 +93,7 @@ export default class CreateProject extends Base {
               });
           }
         }
-        this.loading('Downloading template...');
+        this.loading('项目加载中...');
         return download(repository.replace('_repo_', repo), dir, {
           strip: 1,
           extract: true,
@@ -101,18 +102,18 @@ export default class CreateProject extends Base {
       .then((dir: string) => {
         this.stopLoading();
         this.renameDirName(dir);
-        this.success('Project is created!');
+        this.success('项目已创建');
         return new Promise((resolve, reject) => {
-          this.info('Installing dependencies...');
+          this.info('依赖安装中...');
           const ps = spawn('yarn', [], { cwd: dir, stdio: 'inherit' });
           ps.on('close', (code: number) => {
             if (code !== 0) {
-              this.error(
-                'Installing dependencies FAILED. You can try again later, then use commands:'
-              );
+              this.error('依赖自动安装失败，你可以通过 "yarn" 命令手动安装');
               reject();
             } else {
-              this.success('Project is created. Have fun!');
+              this.success(
+                `已完成所有工作，接下来就交给你了! 你或许对 ${docs} 感兴趣`
+              );
               resolve(true);
             }
           });
