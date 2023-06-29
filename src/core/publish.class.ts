@@ -1,11 +1,11 @@
-import Base from './base.class.js';
+import Task from './task.class.js';
 
-export default class PublishProject extends Base {
-  constructor() {
-    super('publish');
+export default class PublishProject extends Task {
+  constructor(args: any) {
+    super({ name: 'publishProject', args });
   }
 
   process() {
-    return Promise.reject('暂未实现，敬请期待');
+    return Promise.reject('No implementation yet, so stay tuned');
   }
 }

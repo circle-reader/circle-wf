@@ -1,10 +1,10 @@
 {
   "name": "circle-wf",
-  "version": "1.0.1",
+  "version": "1.0.6",
   "license": "MIT",
   "type": "module",
-  "description": "快速开发 Circle 阅读助手应用的命令行工具",
-  "author": "Ranhe<wenguang.fe@gmail.com>",
+  "author": "Ranhe <wenguang.fe@gmail.com> (https://circlereader.com/)",
+  "description": "Command line tool for rapid development of Circle Reader Plugin",
   "main": "dist/index.js",
   "bin": {
     "circle": "./dist/index.js"
@@ -12,7 +12,7 @@
   "scripts": {
     "start": "DEBUG=TRUE nodemon --exec ts-node ./src/index.ts",
     "build": "npx tsc",
-    "release": "yarn build && npm publish",
+    "release": "npm run build && npm publish",
     "lint": "eslint src/**",
     "prepare": "husky install"
   },
@@ -21,16 +21,33 @@
       "path": "./node_modules/cz-conventional-changelog"
     }
   },
+  "dependencies": {
+    "axios": "^1.4.0",
+    "chokidar": "^3.5.3",
+    "commander": "^11.0.0",
+    "consola": "^3.2.2",
+    "download": "^8.0.0",
+    "figlet": "^1.6.0",
+    "inquirer": "^9.2.7",
+    "inquirer-autocomplete-prompt": "^3.0.0",
+    "ora": "^6.3.1",
+    "react-dev-utils": "^12.0.1",
+    "shelljs": "^0.8.5",
+    "webpack": "^5.88.1",
+    "ws": "^8.13.0"
+  },
   "devDependencies": {
     "@commitlint/cli": "^17.6.6",
     "@commitlint/config-conventional": "^17.6.6",
-    "@types/cross-spawn": "^6.0.2",
+    "@tsconfig/node16": "^16.1.0",
     "@types/download": "^8.0.2",
     "@types/figlet": "^1.5.6",
     "@types/inquirer": "^9.0.3",
     "@types/inquirer-autocomplete-prompt": "^3.0.0",
     "@types/node": "^20.3.2",
+    "@types/react-dev-utils": "^9.0.11",
     "@types/shelljs": "^0.8.12",
+    "@types/ws": "^8.5.5",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "@typescript-eslint/parser": "^5.60.1",
     "eslint": "^8.43.0",
@@ -40,18 +57,7 @@
     "lint-staged": "^13.2.3",
     "nodemon": "^2.0.22",
     "prettier": "^2.8.8",
-    "ts-node": "^10.9.1"
-  },
-  "dependencies": {
-    "axios": "^1.4.0",
-    "commander": "^11.0.0",
-    "consola": "^3.2.2",
-    "cross-spawn": "^7.0.3",
-    "download": "^8.0.0",
-    "figlet": "^1.6.0",
-    "inquirer": "^9.2.7",
-    "inquirer-autocomplete-prompt": "^3.0.0",
-    "ora": "^6.3.1",
-    "shelljs": "^0.8.5"
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
   }
 }

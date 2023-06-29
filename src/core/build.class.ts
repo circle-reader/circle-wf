@@ -1,16 +1,54 @@
-import shell from 'shelljs';
-import Base from './base.class.js';
+import fs from 'fs';
+import Webpack from 'webpack';
+import Meta from './meta.class.js';
 
-export default class BuildProject extends Base {
-  constructor() {
-    super('build');
+export default class BuildProject extends Meta {
+  constructor(args: any) {
+    super({ name: 'buildProject', args });
   }
 
   process() {
-    this.loading('准备中...');
-    return new Promise((reslove) => {
-      shell.exec('yarn build');
-      reslove(true);
+    this.loading('Start building...');
+    return new Promise((reslove, reject) => {
+      const webpackConfig = this.require('webpack/build.js');
+      const compiler = Webpack(webpackConfig);
+
+      if (fs.existsSync(compiler.outputPath)) {
+        fs.rmSync(compiler.outputPath, { recursive: true });
+      }
+
+      compiler.run((err, stats) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        if (stats) {
+          process.stdout.write(
+            `${stats.toString({
+              colors: true,
+              modules: false,
+              children: false,
+              chunks: false,
+              chunkModules: false,
+            })}\n\n`
+          );
+          if (stats.hasErrors()) {
+            this.error('Build failed with errors.');
+          }
+        }
+
+        compiler.close((closeErr) => {
+          reslove(false);
+          closeErr && this.error(closeErr.message);
+        });
+      });
+
+      process.on('SIGINT', () => {
+        compiler.close(() => {
+          this.afterAll();
+          process.exit();
+        });
+      });
     });
   }
 }

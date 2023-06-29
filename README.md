@@ -5,7 +5,7 @@
 ## 安装
 
 ```
-yarn global add circle-wf
+npm install -g circle-wf
 ```
 
 ## 使用

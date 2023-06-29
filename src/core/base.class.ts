@@ -1,12 +1,26 @@
+import fs from 'fs';
 import ora from 'ora';
+import path from 'path';
 import { consola } from 'consola';
+import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
+
+export interface IProps {
+  name: string;
+  cwd?: string;
+  args?: any;
+}
 
 export default class Base {
-  private name: string;
   private spinner = ora('');
+  protected debug: boolean;
+  protected props: IProps;
+  protected registry: string;
 
-  constructor(name: string) {
-    this.name = name;
+  constructor(props: IProps) {
+    this.props = props;
+    this.debug = process.env.DEBUG === 'TRUE';
+    this.registry = 'https://registry.npmjs.org';
   }
 
   info(msg: string) {
@@ -25,7 +39,7 @@ export default class Base {
     consola.error(new Error(msg));
   }
 
-  loading(text = '处理中...') {
+  loading(text = 'Processing...') {
     this.spinner.text = text;
     this.spinner.start();
   }
@@ -34,26 +48,18 @@ export default class Base {
     this.spinner.stop();
   }
 
-  start(...args: any[]) {
-    this.beforeAll();
-    this.process(...args)
-      .finally(() => {
-        this.afterAll();
-      })
-      .catch((err) => {
-        this.stopLoading();
-        this.error(err);
-      });
+  require(dist: string, self?: boolean, redirect?: boolean) {
+    const filePath = redirect ? dist : this.path(dist, self);
+    if (!fs.existsSync(filePath)) {
+      return;
+    }
+    return createRequire(import.meta.url)(filePath);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  process(...args: any[]): Promise<any> {
-    return Promise.resolve();
-  }
-
-  beforeAll() {}
-
-  afterAll() {
-    this.stopLoading();
+  path(dist: string, self?: boolean) {
+    const cwd = self
+      ? path.join(path.dirname(fileURLToPath(import.meta.url)), '../../')
+      : this.props.cwd || process.cwd();
+    return path.join(cwd, dist.startsWith('/') ? dist : `/${dist}`);
   }
 }
