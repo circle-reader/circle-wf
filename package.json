@@ -1,6 +1,6 @@
 {
-  "name": "circle-cli",
-  "version": "1.0.0",
+  "name": "circle-wf",
+  "version": "1.0.1",
   "license": "MIT",
   "type": "module",
   "description": "快速开发 Circle 阅读助手应用的命令行工具",
@@ -12,6 +12,7 @@
   "scripts": {
     "start": "DEBUG=TRUE nodemon --exec ts-node ./src/index.ts",
     "build": "npx tsc",
+    "release": "yarn build && npm publish",
     "lint": "eslint src/**",
     "prepare": "husky install"
   },
@@ -38,7 +39,8 @@
     "husky": "^8.0.3",
     "lint-staged": "^13.2.3",
     "nodemon": "^2.0.22",
-    "prettier": "^2.8.8"
+    "prettier": "^2.8.8",
+    "ts-node": "^10.9.1"
   },
   "dependencies": {
     "axios": "^1.4.0",
@@ -50,7 +52,6 @@
     "inquirer": "^9.2.7",
     "inquirer-autocomplete-prompt": "^3.0.0",
     "ora": "^6.3.1",
-    "shelljs": "^0.8.5",
-    "ts-node": "^10.9.1"
+    "shelljs": "^0.8.5"
   }
 }

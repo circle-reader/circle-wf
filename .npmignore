@@ -1,11 +1,10 @@
 src
 .husky
 .eslintignore
-.eslintrc.js
+.eslintrc.cjs
 .lintstagedrc.json
 .prettierignore
 .prettierrc.json
-commitlint.config.js
+commitlint.config.cjs
 tsconfig.json
-tsconfig.tsbuildinfo
 yarn.lock

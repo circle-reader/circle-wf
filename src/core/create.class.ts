@@ -6,19 +6,19 @@ import download from 'download';
 import spawn from 'cross-spawn';
 import Base from './base.class.js';
 import { createRequire } from 'module';
-import { docs, projects, repository } from '../config.js';
+import { registry } from '../config.js';
 
 const require = createRequire(import.meta.url);
 
 interface IProject {
-  id: number;
-  description: string;
-  name: string;
-  data: Array<{
+  package: {
     name: string;
-    description: string;
-  }>;
+    version: string;
+    description?: string;
+  };
 }
+
+const search = 'circle-template-';
 
 export default class CreateProject extends Base {
   constructor() {
@@ -35,9 +35,22 @@ export default class CreateProject extends Base {
   process() {
     this.loading('准备中...');
     return axios
-      .get(projects)
-      .then((result: { data: Array<IProject> }) => {
+      .get(`${registry}/-/v1/search?text=${search}`)
+      .then((returnValue: any) => {
+        const result: { objects: Array<IProject> } = returnValue.data;
         this.stopLoading();
+        const templates =
+          Array.isArray(result.objects) && result.objects.length > 0
+            ? result.objects.filter(
+                (project) =>
+                  project.package &&
+                  project.package.name &&
+                  project.package.name.startsWith(search)
+              )
+            : [];
+        if (templates.length <= 0) {
+          return Promise.reject('未发现任何模版');
+        }
         return inquirer.prompt([
           {
             name: 'repo',
@@ -46,16 +59,26 @@ export default class CreateProject extends Base {
             message: '请选择一个模版',
             source: async (answers: any, input: string) => {
               const projects = input
-                ? result.data.filter(
-                    (project) =>
-                      project.name.includes(input) ||
-                      project.description.includes(input)
-                  )
-                : result.data;
+                ? templates.filter((project) => {
+                    if (
+                      project.package.name &&
+                      project.package.name.includes(input)
+                    ) {
+                      return true;
+                    }
+                    if (
+                      project.package.description &&
+                      project.package.description.includes(input)
+                    ) {
+                      return true;
+                    }
+                    return false;
+                  })
+                : templates;
               return projects.map((project) => ({
-                name: `${project.name} ${project.description}`,
-                short: project.name,
-                value: project.id,
+                name: `${project.package.name} ${project.package.description}`,
+                short: project.package.name,
+                value: `${project.package.name}/${project.package.version}`,
               }));
             },
           },
@@ -94,10 +117,20 @@ export default class CreateProject extends Base {
           }
         }
         this.loading('项目加载中...');
-        return download(repository.replace('_repo_', repo), dir, {
-          strip: 1,
-          extract: true,
-        }).then(() => Promise.resolve(targetDir));
+        return axios.get(`${registry}/${repo}`).then((returnValue: any) => {
+          const result = returnValue.data;
+          if (result.dist && result.dist.tarball) {
+            return download(result.dist.tarball, dir, {
+              strip: 1,
+              extract: true,
+            }).then(() => {
+              this.stopLoading();
+              return Promise.resolve(targetDir);
+            });
+          }
+          this.stopLoading();
+          return Promise.reject('未发现模版项目');
+        });
       })
       .then((dir: string) => {
         this.stopLoading();
@@ -112,7 +145,7 @@ export default class CreateProject extends Base {
               reject();
             } else {
               this.success(
-                `已完成所有工作，接下来就交给你了! 你或许对 ${docs} 感兴趣`
+                `已完成所有工作，接下来就交给你了! 你或许会对 ${registry}/.zip 感兴趣`
               );
               resolve(true);
             }

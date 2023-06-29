@@ -36,11 +36,14 @@ export default class Base {
 
   start(...args: any[]) {
     this.beforeAll();
-    try {
-      this.process(...args).then(this.afterAll);
-    } catch (e) {
-      this.afterAll();
-    }
+    this.process(...args)
+      .finally(() => {
+        this.afterAll();
+      })
+      .catch((err) => {
+        this.stopLoading();
+        this.error(err);
+      });
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
