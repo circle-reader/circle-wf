@@ -3,49 +3,60 @@ import path from 'path';
 import Task from './task.class.js';
 
 export default class Meta extends Task {
-  private getEntry() {
-    let entry = '';
+  private _getEntry() {
+    let index = '';
     [
+      'index.tsx',
+      'index.jsx',
       'index.ts',
       'index.class.ts',
-      'index.tsx',
-      'index.js',
       'index.class.js',
-      'index.jsx',
+      'index.js',
     ].forEach((key) => {
       const entryPath = this.path(`src/${key}`);
       if (fs.existsSync(entryPath)) {
-        entry = key;
+        index = key;
       }
     });
-    return entry;
+    return index;
   }
 
   private reactProject(entry: string) {
     return /\.(tsx|jsx)/.test(entry);
   }
 
-  beforeAll() {
-    const entry = this.getEntry();
-    if (entry) {
-      const autoEntry = this.path(
-        `src/.circle/autoConfig/entry.${/\.ts/.test(entry) ? 'ts' : 'js'}`
-      );
+  getEntry() {
+    const index = this._getEntry();
+    if (index) {
+      return {
+        index,
+        entry: this.path(
+          `src/.circle/autoConfig/entry.${index.split('.').pop()}`
+        ),
+      };
+    }
+    return { index: '', entry: '' };
+  }
 
-      if (!fs.existsSync(autoEntry)) {
-        fs.mkdirSync(path.dirname(autoEntry), { recursive: true });
-      }
-      const data = this.reactProject(entry)
+  beforeAll() {
+    const { index, entry } = this.getEntry();
+    if (!index) {
+      return;
+    }
+    if (!fs.existsSync(entry)) {
+      fs.mkdirSync(path.dirname(entry), { recursive: true });
+    }
+    const data =
+      this.pkg.name !== 'display' && this.reactProject(index)
         ? [
             `// Dynamically generated entry file, please do not edit the file directly`,
-            `import { App, Plugin } from 'circle-cts';`,
-            `import children from '../../${entry.replace(
-              /\.(tsx|jsx|ts|js)/,
-              ''
-            )}';`,
+            `//@ts-ignore`,
+            `import React from 'react';`,
+            `import { App, Plugin, AppContext } from 'circle-cts';`,
+            `import Entry from '../../${index.replace(/\.(tsx|jsx)/, '')}';`,
             ``,
             `//@ts-ignore`,
-            `definePlugin('${this.pkg.name}', function (app: App, plugin: Plugin, { display }: any) {
+            `window.definePlugin('${this.pkg.name}', function (app: App, plugin: Plugin, { display }: any) {
               let destory: (() => void) | null = null;
 
               return {
@@ -53,8 +64,26 @@ export default class Meta extends Task {
                   if (destory) {
                     return;
                   }
-                  destory = display.render(app, children, {
-                    me: plugin,
+                  destory = display.render(({
+                    root,
+                    shadow,
+                    container,
+                  }: {
+                    root: HTMLElement;
+                    shadow: ShadowRoot;
+                    container: HTMLElement;
+                  }) => {
+                    return {
+                      app,
+                      children: <Entry />,
+                      provider: (
+                        <AppContext.Provider
+                          value={{ app, root, shadow, container, me: plugin }}
+                        />
+                      ),
+                    };
+                  },
+                  {
                     // @ts-ignore
                     style: window.inlineStyle,
                   });
@@ -71,7 +100,7 @@ export default class Meta extends Task {
           ]
         : [
             `// Dynamically generated entry file, please do not edit the file directly`,
-            `import children from '../../${entry.replace(
+            `import children from '../../${index.replace(
               /\.(tsx|jsx|ts|js)/,
               ''
             )}';`,
@@ -80,8 +109,7 @@ export default class Meta extends Task {
             `definePlugin('${this.pkg.name}', children);`,
             ``,
           ];
-      fs.writeFileSync(autoEntry, data.join('\n'));
-    }
+    fs.writeFileSync(entry, data.join('\n'));
   }
 
   afterAll(port?: number) {
@@ -98,16 +126,23 @@ export default class Meta extends Task {
     if (debug) {
       appConfig.debug = true;
     }
-    ['title', 'runAt', 'preset', 'priority', 'homepage', 'description'].forEach(
-      (field) => {
-        this.pkg[field] && (appConfig[field] = this.pkg[field]);
-      }
-    );
+    [
+      'title',
+      'runAt',
+      'preset',
+      'core',
+      'enabled',
+      'priority',
+      'homepage',
+      'description',
+    ].forEach((field) => {
+      this.pkg[field] && (appConfig[field] = this.pkg[field]);
+    });
     if (this.pkg._dependencies) {
       appConfig.dependencies = this.pkg._dependencies;
     }
-    const entry = this.getEntry();
-    if (entry && this.reactProject(entry)) {
+    const index = this._getEntry();
+    if (this.pkg.name !== 'display' && index && this.reactProject(index)) {
       if (appConfig.dependencies) {
         appConfig.dependencies = Array.isArray(appConfig.dependencies)
           ? appConfig.dependencies

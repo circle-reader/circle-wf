@@ -39,6 +39,9 @@ export default class DevProject extends Meta {
           watcher.close();
         });
       });
+      process.on('SIGINT', () => {
+        wss.close();
+      });
     });
   }
 
@@ -74,8 +77,14 @@ export default class DevProject extends Meta {
       .then((port) => {
         return new Promise((reslove) => {
           const webpackConfig = this.require('webpack/dev.js');
-          const compiler = Webpack(webpackConfig);
+          if (!webpackConfig.entry) {
+            const { entry } = this.getEntry();
+            if (entry) {
+              webpackConfig.entry = entry;
+            }
+          }
 
+          const compiler = Webpack(webpackConfig);
           // `compiler.outputPath` is safe, even if user webpack config `output.path` is not set.
           if (fs.existsSync(compiler.outputPath)) {
             fs.rmSync(compiler.outputPath, { recursive: true });
@@ -88,7 +97,7 @@ export default class DevProject extends Meta {
             (err, stats) => {
               if (err) {
                 this.error(err.message);
-                reslove(port);
+                this.afterAll(port);
                 return;
               }
               if (stats) {
@@ -105,7 +114,7 @@ export default class DevProject extends Meta {
                   console.error('Build failed with errors.');
                 }
               }
-              reslove(port);
+              this.afterAll(port);
             }
           );
 
@@ -119,6 +128,8 @@ export default class DevProject extends Meta {
               process.exit();
             });
           });
+
+          reslove(port);
         });
       });
   }

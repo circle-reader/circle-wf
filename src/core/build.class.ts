@@ -11,8 +11,13 @@ export default class BuildProject extends Meta {
     this.loading('Start building...');
     return new Promise((reslove, reject) => {
       const webpackConfig = this.require('webpack/build.js');
+      if (!webpackConfig.entry) {
+        const { entry } = this.getEntry();
+        if (entry) {
+          webpackConfig.entry = entry;
+        }
+      }
       const compiler = Webpack(webpackConfig);
-
       if (fs.existsSync(compiler.outputPath)) {
         fs.rmSync(compiler.outputPath, { recursive: true });
       }
