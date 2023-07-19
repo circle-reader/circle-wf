@@ -75,7 +75,7 @@ export default class App extends Base {
       const program = new Command();
 
       program
-        .name(this.pkg.name)
+        .name(this.pkg.name.replace('-wf', ''))
         .version(this.pkg.version)
         .description(this.pkg.description);
 

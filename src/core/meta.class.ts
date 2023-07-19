@@ -52,7 +52,7 @@ export default class Meta extends Task {
             `// Dynamically generated entry file, please do not edit the file directly`,
             `//@ts-ignore`,
             `import React from 'react';`,
-            `import { App, Plugin, AppContext } from 'circle-cts';`,
+            `import { App, Plugin, AppContext } from 'circle-ihk';`,
             `import Entry from '../../${index.replace(/\.(tsx|jsx)/, '')}';`,
             ``,
             `//@ts-ignore`,
@@ -106,7 +106,7 @@ export default class Meta extends Task {
             )}';`,
             ``,
             `//@ts-ignore`,
-            `definePlugin('${this.pkg.name}', children);`,
+            `window.definePlugin('${this.pkg.name}', children);`,
             ``,
           ];
     fs.writeFileSync(entry, data.join('\n'));
@@ -170,17 +170,17 @@ export default class Meta extends Task {
         appConfig.author = authorFields.join(' ');
       }
     }
-    const option = this.path('option.json');
-    if (fs.existsSync(option)) {
-      const optionString = fs.readFileSync(option, 'utf8');
-      if (optionString) {
-        const optionData = JSON.parse(optionString);
-        if (Array.isArray(optionData) && optionData.length > 0) {
-          appConfig.option = {
-            data: optionData,
+    const settings = this.path('settings.json');
+    if (fs.existsSync(settings)) {
+      const setting = fs.readFileSync(settings, 'utf8');
+      if (setting) {
+        const settingData = JSON.parse(setting);
+        if (Array.isArray(settingData) && settingData.length > 0) {
+          appConfig.settings = {
+            option: settingData,
           };
-        } else if (Object.keys(optionData).length > 0) {
-          appConfig.option = optionData;
+        } else if (Object.keys(settingData).length > 0) {
+          appConfig.settings = settingData;
         }
       }
     }
