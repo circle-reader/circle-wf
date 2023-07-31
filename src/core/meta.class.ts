@@ -236,7 +236,7 @@ export default class Meta extends Task {
     const factory = fs.readFileSync(main, 'utf8');
     const mainFile = factory.replace('__PLUGIN_NAME__', this.pkg.name);
     const args = this.props.args || {};
-    if (args.separate) {
+    if (args.separate || this.pkg.preset) {
       fs.writeFileSync(
         this.path(`/dist/${this.pkg.name}.json`),
         JSON.stringify(appConfig, null, 2)

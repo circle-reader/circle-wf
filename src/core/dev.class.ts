@@ -2,11 +2,12 @@ import fs from 'fs';
 import Webpack from 'webpack';
 import chokidar from 'chokidar';
 import http, { Server } from 'http';
+import detect from 'detect-port-alt';
 import { WebSocketServer } from 'ws';
-import { choosePort } from 'react-dev-utils/WebpackDevServerUtils.js';
 import Meta from './meta.class.js';
 
 export default class DevProject extends Meta {
+  private wss: WebSocketServer | null;
   private serve: Server | null;
   private timer: any = null;
   private root: string;
@@ -17,64 +18,53 @@ export default class DevProject extends Meta {
     if (!fs.existsSync(this.root)) {
       fs.mkdirSync(this.root);
     }
+    this.wss = null;
     this.serve = null;
-    choosePort('0.0.0.0', 9100).then((port) => {
-      if (typeof port !== 'number') {
-        process.exit();
-      }
-      const wss = new WebSocketServer({
-        port,
-      });
-      wss.on('connection', (ws) => {
-        const watcher = chokidar.watch(this.root, {
-          ignoreInitial: true,
-        });
-        watcher.on('all', () => {
-          this.timer && clearTimeout(this.timer);
-          this.timer = setTimeout(function () {
-            ws.send('reload');
-          });
-        });
-        ws.on('close', () => {
-          watcher.close();
-        });
-      });
-      process.on('SIGINT', () => {
-        wss.close();
-      });
-    });
-  }
-
-  private devServer() {
-    this.serve = http.createServer((req, res) => {
-      const target = `${this.root}${req.url}`;
-      if (!target.endsWith('.json')) {
-        res.end('not found anything!', 'utf8');
-        return;
-      }
-      const data = fs.readFileSync(target, 'utf8');
-      res.end(data, 'utf8');
-    });
-
-    return choosePort('0.0.0.0', 9000);
   }
 
   process() {
     this.loading('Starting development services...');
-    return this.devServer()
-      .then((port) => {
-        if (typeof port !== 'number') {
-          this.afterAll();
-          process.exit();
-        }
+    return detect(9000, '0.0.0.0')
+      .then((port: number) => {
+        this.wss = new WebSocketServer({
+          port,
+        });
+        this.wss.on('connection', (ws) => {
+          const watcher = chokidar.watch(this.root, {
+            ignoreInitial: true,
+          });
+          watcher.on('all', () => {
+            this.timer && clearTimeout(this.timer);
+            this.timer = setTimeout(function () {
+              ws.send('reload');
+            });
+          });
+          ws.on('close', () => {
+            watcher.close();
+          });
+        });
+        return Promise.resolve();
+      })
+      .then(() => {
+        this.serve = http.createServer((req, res) => {
+          const target = `${this.root}${req.url}`;
+          if (!target.endsWith('.json')) {
+            res.end('not found anything!', 'utf8');
+            return;
+          }
+          const data = fs.readFileSync(target, 'utf8');
+          res.end(data, 'utf8');
+        });
+        return detect(9001, '0.0.0.0');
+      })
+      .then((port: number) => {
         this.serve && this.serve.listen(port);
-        this.stopLoading();
         this.info(
-          `The development service has been started and is currently running on http://localhost:${port}/`
+          `\nThe development service has been started and is currently running on http://localhost:${port}/`
         );
         return Promise.resolve(port);
       })
-      .then((port) => {
+      .then((port: number) => {
         return new Promise((reslove) => {
           const webpackConfig = this.require('webpack/dev.js');
           if (!webpackConfig.entry) {
@@ -95,6 +85,7 @@ export default class DevProject extends Meta {
               aggregateTimeout: 300,
             },
             (err, stats) => {
+              this.stopLoading();
               if (err) {
                 this.error(err.message);
                 this.afterAll(port);
@@ -119,18 +110,23 @@ export default class DevProject extends Meta {
           );
 
           process.on('SIGINT', () => {
-            if (this.serve) {
-              this.serve.close();
-              this.serve = null;
-            }
+            this.wss && this.wss.close();
+            this.serve && this.serve.close();
             watching.close(() => {
               this.afterAll();
-              process.exit();
             });
+            process.exit();
           });
 
           reslove(port);
         });
+      })
+      .catch((err: Error) => {
+        this.wss && this.wss.close();
+        this.serve && this.serve.close();
+        this.afterAll();
+        this.error(err.message);
+        process.exit();
       });
   }
 }
