@@ -46,6 +46,29 @@ export default class Meta extends Task {
     if (!fs.existsSync(entry)) {
       fs.mkdirSync(path.dirname(entry), { recursive: true });
     }
+    const projectConfig: {
+      [index: string]: string | boolean | number;
+    } = {};
+    const projectConfigPath = this.path('config.json');
+    if (fs.existsSync(projectConfigPath)) {
+      const projectConfigFile = fs.readFileSync(projectConfigPath, 'utf8');
+      if (projectConfigFile) {
+        const projectConfigData = JSON.parse(projectConfigFile);
+        [
+          'mode',
+          'style',
+          'zIndex',
+          'useShadow',
+          'className',
+          'rootClassName',
+          'syncWithRender',
+        ].forEach((key) => {
+          if (typeof projectConfigData[key] !== 'undefined') {
+            projectConfig[key] = projectConfigData[key];
+          }
+        });
+      }
+    }
     const data =
       this.pkg.name !== 'display' && this.reactProject(index)
         ? [
@@ -56,7 +79,11 @@ export default class Meta extends Task {
             `import Entry from '../../${index.replace(/\.(tsx|jsx)/, '')}';`,
             ``,
             `//@ts-ignore`,
-            `window.definePlugin('${this.pkg.name}', function (app: App, plugin: Plugin, { display }: any) {
+            `window.definePlugin('${
+              this.pkg.name
+            }', function (plugin: Plugin, app: App, dependencies: {
+              [index: string]: any;
+            }) {
               let destory: (() => void) | null = null;
 
               return {
@@ -64,7 +91,7 @@ export default class Meta extends Task {
                   if (destory) {
                     return;
                   }
-                  destory = display.render(({
+                  destory = dependencies.display.render(({
                     root,
                     shadow,
                     container,
@@ -78,7 +105,7 @@ export default class Meta extends Task {
                       children: <Entry />,
                       provider: (
                         <AppContext.Provider
-                          value={{ app, root, shadow, container, me: plugin }}
+                          value={{ app, root, shadow, container, me: plugin, dependencies }}
                         />
                       ),
                     };
@@ -86,6 +113,7 @@ export default class Meta extends Task {
                   {
                     // @ts-ignore
                     style: window.inlineStyle,
+                    ...${JSON.stringify(projectConfig)}
                   });
                 },
                 destory() {
@@ -129,7 +157,6 @@ export default class Meta extends Task {
     [
       'title',
       'runAt',
-      'preset',
       'core',
       'enabled',
       'priority',
@@ -236,7 +263,7 @@ export default class Meta extends Task {
     const factory = fs.readFileSync(main, 'utf8');
     const mainFile = factory.replace('__PLUGIN_NAME__', this.pkg.name);
     const args = this.props.args || {};
-    if (args.separate || this.pkg.preset) {
+    if (args.separate) {
       fs.writeFileSync(
         this.path(`/dist/${this.pkg.name}.json`),
         JSON.stringify(appConfig, null, 2)

@@ -58,9 +58,18 @@ export default class App extends Base {
               return Promise.resolve();
             }
             this.info('Updated version...');
-            const { code } = shell.exec(`npm install -g ${this.pkg.name}`);
-            if (code !== 0) {
-              this.warn('Update version failed, skip...');
+            const pmr =
+              ['pnpm', 'yarn', 'npm'].find((item) => !!shell.which(item)) || '';
+            let updateCMD = `${pmr} install -g ${this.pkg.name}`;
+            if (pmr === 'yarn') {
+              updateCMD = `yarn global add ${this.pkg.name}`;
+            }
+            const shellWithoutSudo = shell.exec(updateCMD);
+            if (shellWithoutSudo.code !== 0) {
+              const shellWithSudo = shell.exec(`sudo ${updateCMD}`);
+              if (shellWithSudo.code !== 0) {
+                this.warn('Update version failed, skip...');
+              }
             }
             return Promise.resolve();
           });
