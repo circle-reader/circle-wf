@@ -13,7 +13,7 @@ export default class DevProject extends Meta {
   private root: string;
 
   constructor(args: any) {
-    super({ name: 'devProject', args });
+    super({ args, name: 'devProject' });
     this.root = this.path('dist');
     if (!fs.existsSync(this.root)) {
       fs.mkdirSync(this.root);
@@ -88,7 +88,7 @@ export default class DevProject extends Meta {
               this.stopLoading();
               if (err) {
                 this.error(err.message);
-                this.afterAll(port);
+                this.afterAll();
                 return;
               }
               if (stats) {
@@ -105,7 +105,7 @@ export default class DevProject extends Meta {
                   console.error('Build failed with errors.');
                 }
               }
-              this.afterAll(port);
+              this.afterAll();
             }
           );
 

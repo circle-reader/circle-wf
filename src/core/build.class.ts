@@ -4,7 +4,7 @@ import Meta from './meta.class.js';
 
 export default class BuildProject extends Meta {
   constructor(args: any) {
-    super({ name: 'buildProject', args });
+    super({ args, name: 'buildProject' });
   }
 
   process() {

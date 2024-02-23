@@ -10,7 +10,7 @@ export default class PublishProject extends Task {
   private root: string;
 
   constructor(args: any) {
-    super({ name: 'publishProject', args });
+    super({ args, name: 'publishProject' });
     this.root = this.path('dist');
   }
 

@@ -58,6 +58,7 @@ export default class Meta extends Task {
           'mode',
           'style',
           'zIndex',
+          'useBody',
           'useShadow',
           'className',
           'rootClassName',
@@ -140,20 +141,16 @@ export default class Meta extends Task {
     fs.writeFileSync(entry, data.join('\n'));
   }
 
-  afterAll(port?: number) {
+  afterAll() {
     const main = this.path('/dist/main.js');
     if (!fs.existsSync(main)) {
       return;
     }
-    const debug = typeof port === 'number' && port !== 0;
     const appConfig: any = {
       id: this.pkg.name,
       type: this.pkg._type || 'plugin',
       version: this.pkg.version || '1.0.0',
     };
-    if (debug) {
-      appConfig.debug = true;
-    }
     [
       'title',
       'runAt',

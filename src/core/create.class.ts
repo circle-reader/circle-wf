@@ -18,7 +18,7 @@ const search = 'circle-template-';
 
 export default class CreateProject extends Base {
   constructor(args: any) {
-    super({ name: 'createProject', args });
+    super({ args, name: 'createProject' });
   }
 
   private updatePkg(dir: string) {

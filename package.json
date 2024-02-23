@@ -5,13 +5,13 @@
   "type": "module",
   "author": "Ranhe <wenguang.fe@gmail.com> (https://circlereader.com/)",
   "description": "Command line tool for rapid development of Circle Reader Plugin",
-  "main": "dist/index.js",
+  "main": "app/index.js",
   "bin": {
-    "circle": "./dist/index.js"
+    "circle": "./app/index.js"
   },
   "scripts": {
     "start": "DEBUG=TRUE nodemon --exec ts-node ./src/index.ts",
-    "build": "npx tsc",
+    "build": "npx tsc && npx uglifyjs-folder ./dist -x .js -eo ./app",
     "release": "npm run build && npm publish",
     "lint": "eslint src/**",
     "prepare": "husky install"
@@ -33,6 +33,7 @@
     "inquirer-autocomplete-prompt": "^3.0.0",
     "ora": "^6.3.1",
     "shelljs": "^0.8.5",
+    "uglifyjs-folder": "^3.3.0",
     "webpack": "^5.88.1",
     "ws": "^8.13.0"
   },

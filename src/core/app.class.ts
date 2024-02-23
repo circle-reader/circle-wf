@@ -6,8 +6,10 @@ import { Command } from 'commander';
 import inquirerprompt from 'inquirer-autocomplete-prompt';
 import Base from './base.class.js';
 import DevProject from './dev.class.js';
+import MakeProject from './make.class.js';
 import BuildProject from './build.class.js';
 import CreateProject from './create.class.js';
+import InstallProject from './install.class.js';
 import PublishProject from './publish.class.js';
 
 inquirer.registerPrompt('autocomplete', inquirerprompt);
@@ -122,6 +124,14 @@ export default class App extends Base {
         .action((args) => {
           new BuildProject(args).start();
         });
+
+      program.command('install', { hidden: true }).action((args) => {
+        new InstallProject(args).start();
+      });
+
+      program.command('make', { hidden: true }).action((args) => {
+        new MakeProject(args).start();
+      });
 
       program
         .command('publish')
