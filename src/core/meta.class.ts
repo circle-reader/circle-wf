@@ -103,6 +103,7 @@ export default class Meta extends Task {
                   }) => {
                     return {
                       app,
+                      me: plugin,
                       children: <Entry />,
                       provider: (
                         <AppContext.Provider
@@ -155,6 +156,7 @@ export default class Meta extends Task {
       'title',
       'runAt',
       'core',
+      'access',
       'enabled',
       'priority',
       'homepage',
@@ -258,7 +260,11 @@ export default class Meta extends Task {
       appConfig.title = appConfig.id;
     }
     const factory = fs.readFileSync(main, 'utf8');
-    const mainFile = factory.replace('__PLUGIN_NAME__', this.pkg.name);
+    let mainFile = factory.replace('__PLUGIN_NAME__', this.pkg.name);
+    // 导出为 markdown 会因为换行符丢失导致错误
+    // if (!['marked'].includes(this.pkg.name)) {
+    //   mainFile = mainFile.replace(/\\n+/g, ' ');
+    // }
     const args = this.props.args || {};
     if (args.separate) {
       fs.writeFileSync(

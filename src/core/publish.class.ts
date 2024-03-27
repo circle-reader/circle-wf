@@ -43,7 +43,7 @@ export default class PublishProject extends Task {
         ])
         .then(({ username, password }) => {
           return axios
-            .get('http://localhost/api/user/get', {
+            .get('https://circlereader.com/api/user/get', {
               timeout: 10000,
               headers: {
                 'Content-Type': 'application/json',
@@ -53,7 +53,7 @@ export default class PublishProject extends Task {
               },
             })
             .then((res) => {
-              if (res.data.id && res.data.access_token) {
+              if (res.data.access_token) {
                 fs.writeFileSync(configFilePath, JSON.stringify(res.data));
                 return Promise.resolve(res.data);
               } else {
@@ -103,12 +103,11 @@ export default class PublishProject extends Task {
       }
       resolve(mainfest);
     }).then((plugin) => {
-      return this.token().then(({ uid, access_token }) => {
+      return this.token().then(({ access_token }) => {
         this.loading('uploading');
         axios
-          .post('http://localhost/api/apps/publish', plugin, {
+          .post('https://circlereader.com/api/apps/publish', plugin, {
             headers: {
-              id: uid,
               token: access_token,
               'Content-Type': 'application/json',
             },

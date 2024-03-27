@@ -1,12 +1,20 @@
 import fs from 'fs';
+import path from 'path';
 import Webpack from 'webpack';
+import { nextTick } from 'process';
 import Base from './base.class.js';
 
 export default class MakeProject extends Base {
+  private stop: boolean;
+
   constructor(args: any) {
     super({
       args,
       name: 'makeProject',
+    });
+    this.stop = false;
+    process.on('SIGINT', () => {
+      this.stop = true;
     });
   }
 
@@ -60,6 +68,7 @@ export default class MakeProject extends Base {
       'title',
       'runAt',
       'core',
+      'access',
       'enabled',
       'priority',
       'homepage',
@@ -163,7 +172,10 @@ export default class MakeProject extends Base {
       appConfig.title = appConfig.id;
     }
     const factory = fs.readFileSync(main, 'utf8');
-    const mainFile = factory.replace('__PLUGIN_NAME__', pkg.name);
+    let mainFile = factory.replace('__PLUGIN_NAME__', pkg.name);
+    // if (!['marked'].includes(pkg.name)) {
+    //   mainFile = mainFile.replace(/\\n+/g, ' ');
+    // }
     fs.writeFileSync(
       this.path(`${item}/dist/${pkg.name}.json`),
       JSON.stringify(appConfig, null, 2)
@@ -179,86 +191,186 @@ export default class MakeProject extends Base {
     if (items.length <= 0) {
       return;
     }
-    Promise.all(
-      items.map((item) => {
-        return new Promise((reslove, reject) => {
-          const webpackConfig = this.require(`${item}/webpack/build.js`);
-          if (!webpackConfig.entry) {
-            const { entry } = this.getEntry(item);
-            if (entry) {
-              webpackConfig.entry = entry;
-            } else {
-              reject(`${item} entry miss`);
-              return;
-            }
-          }
-          this.loading(`Start build ${item}`);
-          webpackConfig.context = this.path(item);
-          if (webpackConfig.output.filename !== '[name].js') {
-            webpackConfig.output.filename = '[name].js';
-            webpackConfig.output.path = this.path(`${item}/dist`);
-          }
-          const compiler = Webpack(webpackConfig);
-          if (fs.existsSync(compiler.outputPath)) {
-            fs.rmSync(compiler.outputPath, { recursive: true });
-          }
-          compiler.run((err, stats) => {
-            if (err) {
-              reject(err);
-              this.stopLoading();
-              return;
-            }
-            if (stats) {
-              process.stdout.write(
-                `${stats.toString({
-                  colors: true,
-                  modules: false,
-                  children: false,
-                  chunks: false,
-                  chunkModules: false,
-                })}\n\n`
-              );
-              if (stats.hasErrors()) {
-                this.error('Build failed with errors.');
-              }
-            }
-            compiler.close((closeErr) => {
-              this.afterAll(item);
-              reslove(item);
-              closeErr && this.error(closeErr.message);
-              this.stopLoading();
-            });
-          });
-          process.on('SIGINT', () => {
-            compiler.close(() => {
-              this.stopLoading();
-              process.exit();
-            });
-          });
-        });
-      })
-    )
-      .then((items) => {
-        items.forEach((item) => {
-          const filePath = this.path(`${item}/dist`);
-          if (!fs.existsSync(filePath)) {
-            console.log(`${item} dist miss`);
+    const install = () => {
+      if (this.stop) {
+        return;
+      }
+      const item = items.pop();
+      if (item) {
+        const webpackConfig = this.require(`${item}/webpack/build.js`);
+        if (!webpackConfig) {
+          this.error(`${item} config not found`);
+          nextTick(install);
+          return;
+        }
+        if (!webpackConfig.entry) {
+          const { index, entry } = this.getEntry(item);
+          if (!index) {
+            console.log(`${item} index file not found`);
             return;
           }
-          fs.cpSync(filePath, '/Users/ranhe/circle/ext/widget', {
-            recursive: true,
+          if (fs.existsSync(entry)) {
+            webpackConfig.entry = entry;
+          } else {
+            fs.mkdirSync(path.dirname(entry), { recursive: true });
+            const projectConfig: {
+              [index: string]: string | boolean | number;
+            } = {};
+            const projectConfigPath = this.path(`${item}/config.json`);
+            if (fs.existsSync(projectConfigPath)) {
+              const projectConfigFile = fs.readFileSync(
+                projectConfigPath,
+                'utf8'
+              );
+              if (projectConfigFile) {
+                const projectConfigData = JSON.parse(projectConfigFile);
+                [
+                  'mode',
+                  'style',
+                  'zIndex',
+                  'useBody',
+                  'useShadow',
+                  'className',
+                  'rootClassName',
+                  'syncWithRender',
+                ].forEach((key) => {
+                  if (typeof projectConfigData[key] !== 'undefined') {
+                    projectConfig[key] = projectConfigData[key];
+                  }
+                });
+              }
+            }
+            const pkg = this.require(`${item}/package.json`);
+            const data =
+              pkg.name !== 'display' && this.reactProject(index)
+                ? [
+                    `// Dynamically generated entry file, please do not edit the file directly`,
+                    `//@ts-ignore`,
+                    `import React from 'react';`,
+                    `import { App, Plugin, AppContext } from 'circle-ihk';`,
+                    `import Entry from '../../${index.replace(
+                      /\.(tsx|jsx)/,
+                      ''
+                    )}';`,
+                    ``,
+                    `//@ts-ignore`,
+                    `window.definePlugin('${
+                      pkg.name
+                    }', function (plugin: Plugin, app: App, dependencies: {
+              [index: string]: any;
+            }) {
+              let destory: (() => void) | null = null;
+
+              return {
+                start() {
+                  if (destory) {
+                    return;
+                  }
+                  destory = dependencies.display.render(({
+                    root,
+                    shadow,
+                    container,
+                  }: {
+                    root: HTMLElement;
+                    shadow: ShadowRoot;
+                    container: HTMLElement;
+                  }) => {
+                    return {
+                      app,
+                      me: plugin,
+                      children: <Entry />,
+                      provider: (
+                        <AppContext.Provider
+                          value={{ app, root, shadow, container, me: plugin, dependencies }}
+                        />
+                      ),
+                    };
+                  },
+                  {
+                    // @ts-ignore
+                    style: window.inlineStyle,
+                    ...${JSON.stringify(projectConfig)}
+                  });
+                },
+                destory() {
+                  if (destory) {
+                    destory();
+                    destory = null;
+                  }
+                },
+              };
+            });`,
+                    ``,
+                  ]
+                : [
+                    `// Dynamically generated entry file, please do not edit the file directly`,
+                    `import children from '../../${index.replace(
+                      /\.(tsx|jsx|ts|js)/,
+                      ''
+                    )}';`,
+                    ``,
+                    `//@ts-ignore`,
+                    `window.definePlugin('${pkg.name}', children);`,
+                    ``,
+                  ];
+            fs.writeFileSync(entry, data.join('\n'));
+            webpackConfig.entry = entry;
+          }
+        }
+        this.loading(`Start build ${item}`);
+        webpackConfig.context = this.path(item);
+        if (webpackConfig.output.filename !== '[name].js') {
+          webpackConfig.output.filename = '[name].js';
+          webpackConfig.output.path = this.path(`${item}/dist`);
+        }
+        const compiler = Webpack(webpackConfig);
+        if (fs.existsSync(compiler.outputPath)) {
+          fs.rmSync(compiler.outputPath, { recursive: true });
+        }
+        compiler.run((err, stats) => {
+          if (err) {
+            this.error(err.message);
+            this.stopLoading();
+            return;
+          }
+          if (stats) {
+            process.stdout.write(
+              `${stats.toString({
+                colors: true,
+                modules: false,
+                children: false,
+                chunks: false,
+                chunkModules: false,
+              })}\n\n`
+            );
+            if (stats.hasErrors()) {
+              this.error('Build failed with errors.');
+            }
+          }
+          compiler.close((closeErr) => {
+            closeErr && this.error(closeErr.message);
+            this.afterAll(item);
+            this.stopLoading();
+            const filePath = this.path(`${item}/dist`);
+            if (!fs.existsSync(filePath)) {
+              this.error(`${item} dist miss`);
+              return;
+            }
+            fs.cpSync(filePath, '/Users/ranhe/circle/ext/widget', {
+              recursive: true,
+            });
+            fs.rmSync(filePath, { recursive: true });
+            nextTick(install);
           });
-          fs.rmSync(filePath, { recursive: true });
         });
-      })
-      .catch((err) => {
-        console.log(err);
-      })
-      .finally(() => {
+      } else {
         const node = process.cwd() + '/node_modules';
         if (fs.existsSync(node)) {
           fs.rmSync(node, { recursive: true });
         }
-      });
+        this.success("All the work has been done, it's up to you!");
+      }
+    };
+    install();
   }
 }

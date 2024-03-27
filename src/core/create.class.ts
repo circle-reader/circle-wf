@@ -26,6 +26,7 @@ export default class CreateProject extends Base {
     const pkg = this.require(pkgPath, false, true);
     pkg.name = path.basename(dir);
     pkg.version = '1.0.0';
+    delete pkg.description;
     fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
   }
 
@@ -94,7 +95,12 @@ export default class CreateProject extends Base {
         ]);
       })
       .then(({ repo, dir }: { repo: string; dir: string }) => {
-        const targetDir = path.resolve(process.cwd(), dir);
+        const inLernaDir = fs.existsSync(`${process.cwd()}/packages`);
+        const targetDir = path.resolve(
+          process.cwd(),
+          inLernaDir ? 'packages' : '',
+          dir
+        );
         if (fs.existsSync(targetDir)) {
           const fileList = fs.readdirSync(targetDir).filter((file: string) => {
             // ignore .git dir, maybe it is a empty git repo

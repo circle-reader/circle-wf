@@ -21,22 +21,37 @@ export default class InstallProject extends Base {
     if (items.length <= 0) {
       return;
     }
+    const args = this.props.args || {};
+    const force = !!args.force;
     Promise.all(
       items.map((item) => {
-        return new Promise((reslove) => {
-          const nodePath = this.path(`${item}/node_modules`);
-          if (fs.existsSync(nodePath)) {
-            fs.rmSync(nodePath, { recursive: true });
-          }
-          reslove(item);
-        });
+        return force
+          ? new Promise((reslove) => {
+              const nodePath = this.path(`${item}/node_modules`);
+              if (fs.existsSync(nodePath)) {
+                fs.rmSync(nodePath, { recursive: true });
+              }
+              reslove(item);
+            })
+          : Promise.resolve(item);
       })
     )
       .then((items) => {
-        items.forEach((item) => {
-          this.info(`Install dependencies for ${item}`);
-          shell.exec(`cd ${item} && pnpm install`);
-        });
+        const install = () => {
+          const item = items.pop();
+          if (item) {
+            this.info(`Install dependencies for ${item}`);
+            const shellWithoutSudo = shell.exec(`cd ${item} && pnpm install`);
+            if (shellWithoutSudo.code !== 0) {
+              this.error(`${items.join(',')} install fail`);
+            } else {
+              install();
+            }
+          } else {
+            this.success("All the work has been done, it's up to you!");
+          }
+        };
+        install();
       })
       .catch((err) => {
         console.log(err);

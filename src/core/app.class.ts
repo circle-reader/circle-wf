@@ -11,6 +11,7 @@ import BuildProject from './build.class.js';
 import CreateProject from './create.class.js';
 import InstallProject from './install.class.js';
 import PublishProject from './publish.class.js';
+import ReleaseProject from './release.class.js';
 
 inquirer.registerPrompt('autocomplete', inquirerprompt);
 
@@ -125,12 +126,19 @@ export default class App extends Base {
           new BuildProject(args).start();
         });
 
-      program.command('install', { hidden: true }).action((args) => {
-        new InstallProject(args).start();
-      });
+      program
+        .command('install', { hidden: true })
+        .option('-f, --force', 'Clear and install new dependencies')
+        .action((args) => {
+          new InstallProject(args).start();
+        });
 
       program.command('make', { hidden: true }).action((args) => {
         new MakeProject(args).start();
+      });
+
+      program.command('release', { hidden: true }).action((args) => {
+        new ReleaseProject(args).start();
       });
 
       program
