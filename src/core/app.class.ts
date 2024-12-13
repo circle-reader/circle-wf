@@ -6,6 +6,8 @@ import { Command } from 'commander';
 import inquirerprompt from 'inquirer-autocomplete-prompt';
 import Base from './base.class.js';
 import DevProject from './dev.class.js';
+import ScpProject from './scp.class.js';
+import PushProject from './push.class.js';
 import MakeProject from './make.class.js';
 import BuildProject from './build.class.js';
 import CreateProject from './create.class.js';
@@ -140,6 +142,22 @@ export default class App extends Base {
       program.command('release', { hidden: true }).action((args) => {
         new ReleaseProject(args).start();
       });
+
+      program
+        .command('push', { hidden: true })
+        .description('push project to remote')
+        .option('-p, --platform [name]', 'Platform to use')
+        .action((args) => {
+          new PushProject(args).start();
+        });
+
+      program
+        .command('scp', { hidden: true })
+        .description('scp project to remote')
+        .option('-p, --platform [name]', 'Platform to use')
+        .action((args) => {
+          new ScpProject(args).start();
+        });
 
       program
         .command('publish')
