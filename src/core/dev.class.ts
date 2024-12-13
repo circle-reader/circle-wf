@@ -7,10 +7,10 @@ import { WebSocketServer } from 'ws';
 import Meta from './meta.class.js';
 
 export default class DevProject extends Meta {
-  private wss: WebSocketServer | null;
-  private serve: Server | null;
-  private timer: any = null;
   private root: string;
+  private timer: any = null;
+  private serve: Server | null;
+  private wss: WebSocketServer | null;
 
   constructor(args: any) {
     super({ args, name: 'devProject' });

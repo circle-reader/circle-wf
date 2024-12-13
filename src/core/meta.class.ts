@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import Task from './task.class.js';
+import { transform } from 'babel-core';
 
 export default class Meta extends Task {
   private _getEntry() {
@@ -76,7 +77,8 @@ export default class Meta extends Task {
             `// Dynamically generated entry file, please do not edit the file directly`,
             `//@ts-ignore`,
             `import React from 'react';`,
-            `import { App, Plugin, AppContext } from 'circle-ihk';`,
+            `import { App, Plugin } from 'circle-ts';`,
+            `import { AppContext } from 'circle-react-hook';`,
             `import Entry from '../../${index.replace(/\.(tsx|jsx)/, '')}';`,
             ``,
             `//@ts-ignore`,
@@ -261,10 +263,6 @@ export default class Meta extends Task {
     }
     const factory = fs.readFileSync(main, 'utf8');
     let mainFile = factory.replace('__PLUGIN_NAME__', this.pkg.name);
-    // 导出为 markdown 会因为换行符丢失导致错误
-    // if (!['marked'].includes(this.pkg.name)) {
-    //   mainFile = mainFile.replace(/\\n+/g, ' ');
-    // }
     const args = this.props.args || {};
     if (args.separate) {
       fs.writeFileSync(
@@ -273,12 +271,22 @@ export default class Meta extends Task {
       );
       fs.writeFileSync(this.path(`/dist/${this.pkg.name}.js`), mainFile);
     } else {
-      appConfig.main = mainFile;
+      // 转换 es6 为 es5
+      appConfig.main = transform(mainFile, { presets: ['env'] }).code;
       fs.writeFileSync(
         this.path(`/dist/${this.pkg.name}.json`),
         JSON.stringify(appConfig, null, 2)
       );
     }
     fs.rmSync(main);
+    // 构建完成手动转移
+    if (this.props.name === 'buildProject' && args.separate) {
+      const filePath = this.path('/dist');
+      if (fs.existsSync(filePath)) {
+        fs.cpSync(filePath, '/Users/ranhe/circle/ext/widget', {
+          recursive: true,
+        });
+      }
+    }
   }
 }

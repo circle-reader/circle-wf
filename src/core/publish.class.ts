@@ -25,37 +25,34 @@ export default class PublishProject extends Task {
       return inquirer
         .prompt([
           {
-            name: 'username',
+            name: 'mail',
             type: 'input',
-            message: 'please enter your username',
-            validate: (input) => {
-              return !!input;
-            },
+            validate: (val) => !!val,
+            message: 'please enter your email',
           },
           {
-            name: 'password',
+            name: 'pass',
             type: 'input',
+            validate: (val) => !!val,
             message: 'Please enter password',
-            validate: (input) => {
-              return !!input;
-            },
           },
         ])
-        .then(({ username, password }) => {
+        .then(({ mail, pass }) => {
           return axios
-            .get('https://circlereader.com/api/user/get', {
-              timeout: 10000,
-              headers: {
-                'Content-Type': 'application/json',
-                token: Buffer.from(
-                  `${username.trim()}__token__${password.trim()}`
-                ).toString('base64'),
-              },
-            })
+            .post(
+              'https://circlereader.com/api/circle/login',
+              { mail, pass },
+              {
+                timeout: 10000,
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              }
+            )
             .then((res) => {
-              if (res.data.access_token) {
-                fs.writeFileSync(configFilePath, JSON.stringify(res.data));
-                return Promise.resolve(res.data);
+              if (res.data.data.access_token) {
+                fs.writeFileSync(configFilePath, JSON.stringify(res.data.data));
+                return Promise.resolve(res.data.data);
               } else {
                 this.error('Server error, please try again later');
               }
@@ -92,23 +89,25 @@ export default class PublishProject extends Task {
           reject('The format is incorrect, please check');
           return;
         }
-      } else {
-        if (
-          !Array.isArray(mainfest.settings) ||
-          mainfest.settings.length <= 0
-        ) {
-          reject('The format is incorrect, please check');
-          return;
-        }
       }
+      // else {
+      //   if (
+      //     !Array.isArray(mainfest.settings) ||
+      //     mainfest.settings.length <= 0
+      //   ) {
+      //     reject('The format is incorrect, please check');
+      //     return;
+      //   }
+      // }
       resolve(mainfest);
     }).then((plugin) => {
-      return this.token().then(({ access_token }) => {
+      return this.token().then(({ uid, access_token }) => {
         this.loading('uploading');
         axios
-          .post('https://circlereader.com/api/apps/publish', plugin, {
+          .post('https://circlereader.com/api/store/generate', plugin, {
             headers: {
-              token: access_token,
+              platform: 'reader',
+              token: `${access_token}*&~!${uid}`,
               'Content-Type': 'application/json',
             },
           })
@@ -124,12 +123,12 @@ export default class PublishProject extends Task {
                 force: true,
               });
               this.error(
-                'Verification failed, please try again to enter username and password verification'
+                'Verification failed, please try again to enter email and password verification'
               );
             } else {
               this.error(
-                Array.isArray(err.response.data)
-                  ? err.response.data.join(' ')
+                err.response.data.message
+                  ? err.response.data.message
                   : err.response.data
               );
             }

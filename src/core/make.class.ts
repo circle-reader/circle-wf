@@ -247,7 +247,8 @@ export default class MakeProject extends Base {
                     `// Dynamically generated entry file, please do not edit the file directly`,
                     `//@ts-ignore`,
                     `import React from 'react';`,
-                    `import { App, Plugin, AppContext } from 'circle-ihk';`,
+                    `import { App, Plugin } from 'circle-ts';`,
+                    `import { AppContext } from 'circle-react-hook';`,
                     `import Entry from '../../${index.replace(
                       /\.(tsx|jsx)/,
                       ''
