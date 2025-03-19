@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import Task from './task.class.js';
-import { transform } from 'babel-core';
 
 export default class Meta extends Task {
   private _getEntry() {
@@ -271,8 +270,7 @@ export default class Meta extends Task {
       );
       fs.writeFileSync(this.path(`/dist/${this.pkg.name}.js`), mainFile);
     } else {
-      // 转换 es6 为 es5
-      appConfig.main = transform(mainFile, { presets: ['env'] }).code;
+      appConfig.main = mainFile;
       fs.writeFileSync(
         this.path(`/dist/${this.pkg.name}.json`),
         JSON.stringify(appConfig, null, 2)

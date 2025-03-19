@@ -106,9 +106,11 @@ export default class PublishProject extends Task {
         axios
           .post('https://circlereader.com/api/store/generate', plugin, {
             headers: {
-              platform: 'reader',
-              token: `${access_token}*&~!${uid}`,
+              'X-Circle-Lang': 'zh-CN',
+              'X-Circle-App': 'reader',
+              'X-Circle-Version': '1.0.0',
               'Content-Type': 'application/json',
+              'X-Circle-Token': `${access_token}*&~!${uid}`,
             },
           })
           .then(() => {
