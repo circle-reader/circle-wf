@@ -1,6 +1,7 @@
 src
 dist
 .husky
+.prettierrc
 .eslintignore
 .eslintrc.cjs
 .lintstagedrc.json
