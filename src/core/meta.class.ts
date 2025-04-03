@@ -157,6 +157,7 @@ export default class Meta extends Task {
       'title',
       'runAt',
       'core',
+      'device',
       'access',
       'enabled',
       'priority',

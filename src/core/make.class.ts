@@ -68,6 +68,7 @@ export default class MakeProject extends Base {
       'title',
       'runAt',
       'core',
+      'device',
       'access',
       'enabled',
       'priority',
