@@ -267,14 +267,14 @@ export default class Meta extends Task {
     if (args.separate) {
       fs.writeFileSync(
         this.path(`/dist/${this.pkg.name}.json`),
-        JSON.stringify(appConfig, null, 2)
+        JSON.stringify(appConfig, null, ' ')
       );
       fs.writeFileSync(this.path(`/dist/${this.pkg.name}.js`), mainFile);
     } else {
       appConfig.main = mainFile;
       fs.writeFileSync(
         this.path(`/dist/${this.pkg.name}.json`),
-        JSON.stringify(appConfig, null, 2)
+        JSON.stringify(appConfig, null, ' ')
       );
     }
     fs.rmSync(main);
